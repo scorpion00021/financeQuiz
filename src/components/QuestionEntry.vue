@@ -7,9 +7,9 @@
 
         
 
-        <input type="url" name="date" v-model="record.date" required pattern="(0[13578]|1[02])/(0[1-9]|[12][0-9]|3[01])|(0[469]|11)/(0[1-9]|[12][0-9]|30)|02/(0[1-9]|[12][0-9])" placeholder="mm/dd" @change="onChange($event)">
+        <input type="url" name="date" v-model="record.date" class="formElement" placeholder="mm/dd" @change="onChange($event)">
 
-        <select v-model="record.transactionType" @change="onChange($event)">
+        <select v-model="record.transactionType" class="formElement" @change="onChange($event)">
           <option disabled value="">Please select one</option>
           <option value="revenue">Revenue</option>
           <option value="deferred">Deferred</option>
@@ -18,10 +18,10 @@
           <option value="system-credit">System Credit</option>
         </select>
 
-        <input type="number" v-model="record.amount" name="amount" min="0" @change="onChange($event)">
+        <input type="number" v-model="record.amount" class="formElement" placeholder="amount" name="amount" min="0" @change="onChange($event)">
 
         <label class="switch">
-          <input type="checkbox" id="togBtn" v-model="record.isCredit" @change="onChange($event)">
+          <input type="checkbox" id="togBtn" class="formElement" v-model="record.isCredit" @change="onChange($event)">
           <div class="slider round">
             <!--ADDED HTML -->
             <span class="cr">CR</span>
@@ -37,14 +37,11 @@
 <script>
 
 function formatEntry(data){
-  console.log("!!!!!!!!!");
-  
   let output = {
     when: data.date,
     type: data.transactionType
   }
   data.isCredit ? output.Cr = data.amount : output.Dr = data.amount
-  console.log(output)
   return output
 
 }
@@ -83,8 +80,10 @@ export default {
 <style scoped>
 input, select{
     height: 34px;
+    margin: 10px;
+    padding: 2px;
+    border: 1px solid;
 }
-
 
 /*------ SLIDER ---------*/
 .switch {
@@ -92,6 +91,7 @@ input, select{
   display: inline-block;
   width: 90px;
   height: 34px;
+
 }
 
 .switch input {display:none;}

@@ -26,26 +26,13 @@ const store = createStore({
         updateApiResponse (state, apiResponse) {
              state.apiResponse = apiResponse
         },
-        //updateUserAnswer(state, answer) {
-            //state.userAnswers[index] = answer
-            //get top level type selected
-            //get each answer in form
-            // {
-			// 	"type": "cash",
-			// 	"entries": [
-			// 		{
-			// 			"when": "6/10",
-			// 			"type": "cash",
-			// 			"Dr": 100
-			// 		},
-			// 		{
-			// 			"when": "6/10",
-			// 			"type": "revenue",
-			// 			"Cr": 100
-			// 		}
-			// 	]
-			// }
-        //},
+        setAnswerFlag(state, {flag, index}) {
+            state.userAnswers[index] = flag
+        },
+        resetTest (state) {
+            state.userAnswers = []
+            updateApiResponse().then(response => store.commit('updateApiResponse', response.data))
+        },
         increment(state) {
             state.count += 1;
         }
@@ -53,17 +40,15 @@ const store = createStore({
      getters: {
         getApiResponse: state => state.apiResponse, 
         getQuestionCount: (state, getters) => getters.getApiResponse.length,
-        apiResponsePopulated: (state, getters) => getters.getQuestionCount > 0,
+        apiResponsePopulated: (state) => !!state.apiResponse,
         getUserAnswersForQuestion: (state) => (index) => state.userAnswers[index]
      }
 })
 
-function updateApiResponse(){
-    axios.get('https://reclique.github.io/web-dev-testing/1_accounting_game/questions.json').then(function (response) {
-    store.commit('updateApiResponse', response.data)
-    console.log(response);
-  }) 
-    
+export default store
+
+async function updateApiResponse(){
+    return axios.get('https://reclique.github.io/web-dev-testing/1_accounting_game/questions.json')
 }
 
 function registerComponents(app){
@@ -77,16 +62,19 @@ function registerComponents(app){
     })
 }
 
+async function populateResponseCache(){
+    if(!store.getters.apiResponsePopulated){
+        await updateApiResponse().then(function(response) {
+            store.commit('updateApiResponse', response.data)
+        })
+    }
+    return true;
+}
+
 const app = createApp(App)
-app.use(router)
 app.use(store)
 registerComponents(app)
-app.mount('#app')
-
-
-//post app mount
-//only pull from the question endpoint if we havent cached it.
-console.log(store.getters.apiResponsePopulated)
-if(!store.getters.apiResponsePopulated){
-    updateApiResponse()
-}
+populateResponseCache().then(() => {
+    app.use(router)
+    app.mount('#app')
+})

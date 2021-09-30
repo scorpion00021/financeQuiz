@@ -1,26 +1,42 @@
 <template>
-    
     <div id="componentWrapper">
         <h1>{{ getCurrentQuestion.title }}</h1>
         <h2>{{ getCurrentQuestion.description }}</h2>
         <div id="formWrapper">
+        
+        <label for="transactionType" class="ttlabel">Transaction Type:</label>
+        <select v-model="userAnswer.type" class="formElement" name="transactionType">
+          <option disabled value="">Please select one</option>
+          <option value="cash">Cash</option>
+          <option value="accrual">Accrual</option>
+        </select>
+
             <!-- <question-entry v-for="entry in getUserAnswersForQuestion" v-bind:key="entry.id"></question-entry> -->
             <ol>
                 <li class="entry" v-for="(count, index) in counts" :key="index">
                     <QuestionEntry color="red" label="Red Button" @updateAnswer="UpdateAnswer($event, index)"></QuestionEntry>
                 </li>
             </ol>
-            <button @click="addComponent">Add</button>
-            <button @click="removeComponent">Remove</button>
+            <div style="float:left; margin-left:40px">
+            <button @click="addComponent" class="formElement">Add</button>
+            <button @click="removeComponent" class="formElement">Remove</button>
+            </div>
 
-
-            <button v-on:click="console.log(getUserAnswersForQuestion())">Back</button>
-            <button v-on:click="console.log(getUserAnswersForQuestion())">Submit and Continue</button>
-
-            <br />
-            <button v-on:click="increment()">You clicked me {{ getCount }} times.</button>
-            <button v-on:click="console.log(getUserAnswersForQuestion())">SHOW ANSWER!!</button>
+            <div>
+            <button v-on:click="submitAnswer()" class="formElement">Submit</button>
+            </div>
         </div>
+        
+        <div id="resultArea">
+            <span class="incorrect" style="color:red">Incorrect</span>
+            <span class="correct" style="color:green">Correct</span>
+
+            <div>
+                <button v-if=isLastQuestion v-on:click="resultsPage()">View Results</button>
+                <button v-else v-on:click="nextQuestion()">Next</button>
+            </div>
+        </div>
+
     </div>
     
     
@@ -31,6 +47,7 @@
 //import {mapState} from 'vuex'
 import { mapMutations } from 'vuex'
 import QuestionEntry from './QuestionEntry'
+import _ from 'lodash'
 
 export default 
 {
@@ -42,24 +59,18 @@ export default
         questionNum: { required: true }
     },
     computed: {
-        getCount(){
-            return this.$store.state.count
-        },
-        getQuestionIndex(){
-            return parseInt(this.$props.questionNum)-1
-        },
         getCurrentQuestion(){
             return this.$store.state.apiResponse[parseInt(this.$props.questionNum)-1]
          },
         getUserAnswersForQuestion(){
             return this.$store.getters.getUserAnswersForQuestion(parseInt(this.$props.questionNum)-1)
-        }
-        //currentQuestion: this.$store.state.apiResponse[parseInt(this.$props.questionNum)-1]
-
+        },
     },
     data: function() {
         return {
             counts: 1,
+            isLastQuestion: (this.$props.questionNum == this.$store.state.apiResponse.length),
+            nextQuestionRoute: 'question' + (this.$props.questionNum + 1),
             userAnswer: {
                 type: "",
                 entries: []
@@ -68,19 +79,47 @@ export default
     },
     methods: {
         ...mapMutations([
-        'increment'
+        'setAnswerFlag'
         ]),
         addComponent: function(){
             this.counts ++
         },
         removeComponent: function(){
-            this.counts --
+            if(this.counts > 0){
+                this.counts --
+            }
+            
+        },
+        getQuestionIndex: function(){
+            return parseInt(this.$props.questionNum)-1
         },
         UpdateAnswer: function(entryData, index){
-            console.log(">>>>>>>" + index + ": " + entryData)
             this.userAnswer.entries[index] = entryData
-            console.log(this.userAnswer);
         },
+        submitAnswer(){
+            const possibleAnswers = this.$store.state.apiResponse[this.getQuestionIndex()].correct_answers
+            var correct = false
+            possibleAnswers.forEach(possibleAnswer => {
+                if (_.isEqual(possibleAnswer, this.userAnswer)){
+                    correct = true
+                }
+            });
+            this.disableFormElements()
+            document.getElementById("resultArea").classList.add(correct ? "correct" : "incorrect");
+            this.setAnswerFlag({flag: correct, index: this.getQuestionIndex()})
+        },
+        disableFormElements(){
+            var formElements = document.getElementsByClassName("formElement")
+            formElements.forEach(x => x.setAttribute("disabled","disabled"))
+        },
+        nextQuestion(){
+            const nextQuestionNumber = parseInt(this.$props.questionNum) + 1
+            const nextQuestionRoute = '/question' + nextQuestionNumber
+            this.$router.push({path: nextQuestionRoute})
+        },
+        resultsPage(){
+            this.$router.push({path: '/results'})
+        }
     },
 }
 </script>
@@ -89,7 +128,10 @@ export default
 #formWrapper {
     width: 800px;
     margin: 25px auto;
-    border: 1px solid gray;
+    position: relative;
+}
+.ttlabel{
+    margin: 5px;
 }
 ul {
   list-style-type: none;
@@ -98,7 +140,21 @@ ul {
 li.entry{
   display: block;
 }
-a {
-  color: #42b983;
+#resultArea {
+    display: none;
 }
+#resultArea span {
+    display: none;
+    font-size: 40px;
+}
+#resultArea.correct span.correct {
+    display: block;
+}
+#resultArea.incorrect span.incorrect {
+    display: block;
+}
+#resultArea.correct, #resultArea.incorrect{
+    display: block
+}
+
 </style>
